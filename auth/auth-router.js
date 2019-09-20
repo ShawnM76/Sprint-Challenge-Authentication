@@ -3,6 +3,15 @@ const Users = require('./auth-model.js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const secrets = require('../config/secrets.js');
+const TokenMW = require('./authenticate-middleware.js');
+
+router.get('/users', TokenMW, (req, res) => {
+  Users.find()
+    .then(users => {
+      res.json({ users, loggedInUser: req.user.username });
+    })
+    .catch(err => res.send(err));
+});
 
 router.post('/register', (req, res) => {
   // implement registration
@@ -28,7 +37,8 @@ router.post('/login', (req, res) => {
     .then(user => {
       if (user && bcrypt.compareSync(password, user.password)) {
         // token goes here
-        res.status(200).json({ message: `Welcome ${user.username}!` });
+        const token = generateToken(user);
+        res.status(200).json({ token });
       } else {
         res.status(401).json({ message: 'You cannot pass!' });
       }
